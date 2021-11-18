@@ -24,4 +24,10 @@ text_df
 
 Keep in mind that a tibble is not compatible with tidy text analysis, since each row is made up of multiple combined words. So we need to convert this as a "one-token-per-document-per-row."
 
+```{r}
+#break the text into individual tokens (tokenization) and transform it to a tidy data structure.
+library(tidytext)
+text_df %>%
+  unnest_tokens(word,text)
+```
 
