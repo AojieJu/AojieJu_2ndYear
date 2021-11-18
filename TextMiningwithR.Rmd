@@ -31,9 +31,10 @@ text_df %>%
   unnest_tokens(word,text)
 #Notice that unnest_tokens leaves out other columns, punctuations, and converts the tokens to lowercase. 
 ```
-Then let's move on and do some additional tidying work. The janeaustenr package contains six novels of Jane Austen. The texts in a one-row-per-line format. We'll use mutate() to create columns linenumber and chapter.
+Then let's move on and do some additional tidying work. The "janeaustenr" package contains six novels of Jane Austen. The texts in a one-row-per-line format. We'll use "mutate()" to create columns linenumber and chapter.
 
 ```{r}
+#Construct the dataframe in one-row-per line format.
 library(janeaustenr)
 library(dplyr)
 library(stringr)
@@ -47,6 +48,18 @@ original_books<-austen_books()%>%
   ungroup()
 
 original_books
+
+#Restructure it in one-token-per-row format.
+library(tidytext)
+tidy_books<-original_books%>%
+  unnest_tokens(word,text)
+
+tidy_books
+```
+
+In many cases, we remove stop words. In package "tidytext," we have a dataset "stop_words" with an "anti_join()."
+
+```{r}
 
 ```
 
