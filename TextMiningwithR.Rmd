@@ -60,6 +60,16 @@ tidy_books
 In many cases, we remove stop words. In package "tidytext," we have a dataset "stop_words" with an "anti_join()."
 
 ```{r}
+data(stop_words)
 
+tidy_books<-tidy_books%>%
+  anti_join(stop_words)
+```
+
+How can we count the common words in all of the book? We use "count()" in package "dplyr."
+
+```{r}
+tidy_books%>%
+  count(word, sort=TRUE)
 ```
 
