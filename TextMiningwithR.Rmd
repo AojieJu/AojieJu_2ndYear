@@ -29,5 +29,6 @@ Keep in mind that a tibble is not compatible with tidy text analysis, since each
 library(tidytext)
 text_df %>%
   unnest_tokens(word,text)
+#Notice that unnest_tokens leaves out other columns, punctuations, and converts the tokens to lowercase. 
 ```
-
+Then let's move on.
