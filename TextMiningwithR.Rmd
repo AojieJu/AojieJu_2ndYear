@@ -31,4 +31,22 @@ text_df %>%
   unnest_tokens(word,text)
 #Notice that unnest_tokens leaves out other columns, punctuations, and converts the tokens to lowercase. 
 ```
-Then let's move on.
+Then let's move on and do some additional tidying work. The janeaustenr package contains six novels of Jane Austen. The texts in a one-row-per-line format. We'll use mutate() to create columns linenumber and chapter.
+
+```{r}
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+
+original_books<-austen_books()%>%
+  group_by(book)%>%
+  mutate(linenumber=row_number(),
+         chapter=cumsum(str_detect(text,
+                              regex("^chapter [\\divxlc]",
+                                         ignore_case=TRUE)))) %>%
+  ungroup()
+
+original_books
+
+```
+
