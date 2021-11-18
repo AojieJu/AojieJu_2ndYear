@@ -1,0 +1,24 @@
+---
+title: "Text Mining with R"
+author: "Aojie Ju"
+date: "11/18/2021"
+output: pdf_document
+---
+
+```{r}
+#Create a character vector.
+text<-c("Because I could not stop for Death-",
+"He kindly stopped for me-",
+"The Carriage held but just Ourselves-",
+"and Immortality")
+
+text
+
+#Turn it into a tidy text dataset.
+library(dplyr) 
+text_df<-tibble(line=1:4,text=text) #tibble builds a data frame here.
+
+text_df
+
+```
+
