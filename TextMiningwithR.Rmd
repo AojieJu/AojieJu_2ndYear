@@ -22,3 +22,6 @@ text_df
 
 ```
 
+Keep in mind that a tibble is not compatible with tidy text analysis, since each row is made up of multiple combined words. So we need to convert this as a "one-token-per-document-per-row."
+
+
