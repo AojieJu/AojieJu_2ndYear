@@ -101,4 +101,22 @@ tidy_hgwells<-hgwells%>%
 tidy_hgwells%>%
   count(word,sort=TRUE)
 ```
+We calculate the frequency for each word for the works of Jane Austen and H.G. Wells by binding the dataframes together. We use "pivot_wider()" and "pivot_longer()" from package "tidyr" to reshape the dataframe.
+
+```{r}
+library(tidyr)
+
+frequency<-bind_rows(mutate(tidy_books,author="Jane Austen"),
+                     mutate(tidy_hgwells,author="H.G. Wells"))%>%
+  mutate(word=str_extract(word,"[a-z']+"))%>%
+  count(author,word)%>%
+  group_by(author)%>%
+  mutate(proportion=n/sum(n))%>%
+  select(-n)%>%
+  pivot_wider(names_from=author,values_from=proportion)%>%
+  pivot_longer(`Jane Austen`:`H.G. Wells`,
+               names_to="author",values_to="proportion")
+
+frequency
+```
 
