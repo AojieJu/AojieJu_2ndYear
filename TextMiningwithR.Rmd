@@ -72,4 +72,33 @@ How can we count the common words in all of the book? We use "count()" in packag
 tidy_books%>%
   count(word, sort=TRUE)
 ```
+Let's visualize the word counts.
+
+```{r}
+library(ggplot2)
+tidy_books%>%
+  count(word,sort=TRUE)%>%
+  filter(n>600)%>%
+  mutate(word=reorder(word,n))%>%
+  ggplot(aes(n,word))+
+  geom_col()+
+  labs(y=NULL)
+```
+
+Now we turn to another resource by employing "gutenbergr" package. We read four books by H.G. Wells, \textit{The Time Machine}, \textit{The War of the Worlds}, \textit{The Invisible Man}, and \textit{The Island of Doctor Moreau}.
+
+```{r}
+library(gutenbergr)
+
+#These are the ID numbers of these books.
+hgwells<-gutenberg_download(c(35,36,5230,159),mirror = "http://mirrors.xmission.com/gutenberg/")
+
+tidy_hgwells<-hgwells%>%
+  unnest_tokens(word,text)%>%
+  anti_join(stop_words)
+
+#Count the most common words in Wells' novels.
+tidy_hgwells%>%
+  count(word,sort=TRUE)
+```
 
