@@ -156,3 +156,9 @@ ggplot(frequency, aes(x=proportion,y=`Jane Austen`,
   labs(y="Jane Austen",x=NULL)
 ```
 
+The graphs show that Bronte Sisters have more similar words with Jane Austen than with H.G. Wells. How similar and different these sets of word frequencies are?
+
+```{r}
+cor.test(data=frequency[frequency$author=="Bronte Sisters",],~proportion+`Jane Austen`)
+```
+
