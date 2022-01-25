@@ -4,15 +4,7 @@ author: "Aojie Ju"
 date: "1/23/2022"
 output: html_document
 ---
-What should we do? 
 
-Import the preamble.
-Tokenize and preprocessing the text.
-Calculate the regular document term frequency and the tf-idf weighted term frequency.
-Visualize the preable to the US Constitution with a word cloud.
-How do the results differ between the two methods?
-Apply the k-means algorithm to the tf-idf and identify clusters of similar constitution preambles. Set the number of clusters to 4 and describe the results. And to make each row comparable, divide it by a constant such that each row represents a vector of unit length.
-US Constitutional preamble is becoming more or less similar to foreign constitutions over time? 
 ```{r}
 library(tm)
 library(SnowballC)
@@ -103,9 +95,11 @@ for (i in 1:k){#loop for each cluster
   cat("\n")
   }
 ```
+As we have noticed, the first cluster consists of 30 constitutions, the second consists of 123 constitutions, and clusters 3 and 4 only consist of 1 constitution respectively. What makes each cluster stand out? Cluster 1: independ. 2: social, justic. 3: develop, econom, activ. 4: islam, movement, struggl, revolut, ideolog. The stems "nation" and "peopl" are in common. Cluster 2 places peopl over nation, Cluster 1 places nation over peopl, Cluster 3 places nation way over peopl, and Cluster 4 replaces nation with islam.
 
 ```{r}
 library(widyr)
+#Return to the tokenized data without including the stems.
 tokens_origin<-count(tokens_data2,ID,word)
 dtm_origin<-cast_dtm(tokens_origin,
               document=ID,
@@ -113,19 +107,23 @@ dtm_origin<-cast_dtm(tokens_origin,
               value=n)
 dtm_origin_matrix<-as.matrix(dtm_origin)
 
+#Write the function of cosine similarity. 
 cosine<-function(a,b){
   numer<-apply(a*t(b),2,sum)
 denom<-sqrt(sum(a^2))*sqrt(apply(b^2,1,sum))
 return(numer/denom)
 }
+#Compare US constitution with other constitutions.
 cos_matrix<-as.matrix(cosine(dtm_origin_matrix[149,],dtm_origin_matrix[-149,]))
 
 sort(cos_matrix)
 
 #ID: 7 (Argentina 1853), 109 (Philippines 1987), 80 (Liberia 1986), 53 (Ghana 1992), 124 (Solomon Islands 1978)
 ```
+As we have noticed, the five constitutions similar to US constitutions are Argentina 1853, Philippines 1987, Liberia 1986, Ghana 1992, and Solomon Islands 1978.
 
 ```{r}
+#Create data frames including consitutions formulated every decade from 1960 to 2010. Also include US constitution for comparison.
 tokens_data2_1960<-subset(tokens_data2, year>=1960 & year<1970|ID==149)
 tokens_data2_1970<-subset(tokens_data2, year>=1970 & year<1980|ID==149)
 tokens_data2_1980<-subset(tokens_data2, year>=1980 & year<1990|ID==149)
@@ -133,6 +131,7 @@ tokens_data2_1990<-subset(tokens_data2, year>=1990 & year<2000|ID==149)
 tokens_data2_2000<-subset(tokens_data2, year>=2000 & year<2010|ID==149)
 tokens_data2_2010<-subset(tokens_data2, year>=2010 & year<2020|ID==149)
 
+#Compare US constitution and constitutions formulated in 1960s
 tokens_origin_1960<-count(tokens_data2_1960,ID,word)
 dtm_origin_1960<-cast_dtm(tokens_origin_1960,
               document=ID,
@@ -143,6 +142,7 @@ cos_matrix_1960<-as.matrix(cosine(dtm_origin_matrix_1960[5,],dtm_origin_matrix_1
 average_1960<-mean(cos_matrix_1960)
 sd_1960<-sd(cos_matrix_1960,na.rm=FALSE)
 
+#Compare US constitution and constitutions formulated in 1970s
 tokens_origin_1970<-count(tokens_data2_1970,ID,word)
 dtm_origin_1970<-cast_dtm(tokens_origin_1970,
               document=ID,
@@ -153,6 +153,7 @@ cos_matrix_1970<-as.matrix(cosine(dtm_origin_matrix_1970[25,],dtm_origin_matrix_
 average_1970<-mean(cos_matrix_1970)
 sd_1970<-sd(cos_matrix_1970,na.rm=FALSE)
 
+#Compare US constitution and constitutions formulated in 1980s
 tokens_origin_1980<-count(tokens_data2_1980,ID,word)
 dtm_origin_1980<-cast_dtm(tokens_origin_1980,
               document=ID,
@@ -163,6 +164,7 @@ cos_matrix_1980<-as.matrix(cosine(dtm_origin_matrix_1980[21,],dtm_origin_matrix_
 average_1980<-mean(cos_matrix_1980)
 sd_1980<-sd(cos_matrix_1980,na.rm=FALSE)
 
+#Compare US constitution and constitutions formulated in 1990s
 tokens_origin_1990<-count(tokens_data2_1990,ID,word)
 dtm_origin_1990<-cast_dtm(tokens_origin_1990,
               document=ID,
@@ -173,6 +175,7 @@ cos_matrix_1990<-as.matrix(cosine(dtm_origin_matrix_1990[47,],dtm_origin_matrix_
 average_1990<-mean(cos_matrix_1990)
 sd_1990<-sd(cos_matrix_1990,na.rm=FALSE)
 
+#Compare US constitution and constitutions formulated in 2000s
 tokens_origin_2000<-count(tokens_data2_2000,ID,word)
 dtm_origin_2000<-cast_dtm(tokens_origin_2000,
               document=ID,
@@ -183,6 +186,7 @@ cos_matrix_2000<-as.matrix(cosine(dtm_origin_matrix_2000[23,],dtm_origin_matrix_
 average_2000<-mean(cos_matrix_2000)
 sd_2000<-sd(cos_matrix_2000,na.rm=FALSE)
 
+#Compare US constitution and constitutions formulated in 2010s
 tokens_origin_2010<-count(tokens_data2_2010,ID,word)
 dtm_origin_2010<-cast_dtm(tokens_origin_2010,
               document=ID,
@@ -193,6 +197,7 @@ cos_matrix_2010<-as.matrix(cosine(dtm_origin_matrix_2010[18,],dtm_origin_matrix_
 average_2010<-mean(cos_matrix_2010)
 sd_2010<-sd(cos_matrix_2010,na.rm=FALSE)
 
+#Add decades to each matrix of cosine similarity
 library(ggplot2)
 cos_frame_1960<-as.data.frame(cos_matrix_1960)
 cos_frame_1960$year<-as.character(1960)
@@ -207,7 +212,7 @@ cos_frame_2000$year<-as.character(2000)
 cos_frame_2010<-as.data.frame(cos_matrix_2010)
 cos_frame_2010$year<-as.character(2010)
 
-
+#Print the ggplot
 g2<-ggplot()+stat_summary(aes(x=year,y=V1),cos_frame_1960,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_1970,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_1980,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_1990,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_2000,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_2010,fun.data="mean_cl_normal")
 g2
 ```
