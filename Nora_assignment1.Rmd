@@ -1,0 +1,214 @@
+---
+title: "Assignment1"
+author: "Aojie Ju"
+date: "1/23/2022"
+output: html_document
+---
+What should we do? 
+
+Import the preamble.
+Tokenize and preprocessing the text.
+Calculate the regular document term frequency and the tf-idf weighted term frequency.
+Visualize the preable to the US Constitution with a word cloud.
+How do the results differ between the two methods?
+Apply the k-means algorithm to the tf-idf and identify clusters of similar constitution preambles. Set the number of clusters to 4 and describe the results. And to make each row comparable, divide it by a constant such that each row represents a vector of unit length.
+US Constitutional preamble is becoming more or less similar to foreign constitutions over time? 
+```{r}
+library(tm)
+library(SnowballC)
+library(stringr)
+library(tidytext)
+library(tidyverse)
+library(foreign)
+data<-read.csv("C:/Users/Aojie Ju/Downloads/DISCOVERY/DISCOVERY/constitution.csv")
+data_raw<-Corpus(VectorSource(data$preamble))
+#Tokenize the csv data.
+tokens_data<-data%>%
+  unnest_tokens(word,preamble,to_lower=TRUE)%>%
+  #Create ID by country*year
+  mutate(ID=group_indices(.,country,year))%>%
+  #Stem the words
+  mutate(stem=wordStem(word))%>%
+  #Remove numbers in the strings
+  mutate(word=str_replace_all(word,"\\d+",""))%>%
+  #Drop empty strings
+  filter(word !="")
+glimpse(tokens_data)
+
+#Drop the stop words
+data("stop_words",package="tidytext")
+tokens_data2<-tokens_data%>%
+  anti_join(stop_words,by="word")
+
+#Count the frequency.
+tokens_counts<-count(tokens_data2,ID,stem)
+
+#Create the document_term matrix
+dtm<-cast_dtm(tokens_counts,
+              document=ID,
+              term=stem,
+              value=n)
+dtm
+inspect(dtm[1:10,1:10])
+dtm_matrix<-as.matrix(dtm)
+
+#Create a word cloud
+library(wordcloud)
+library(RColorBrewer)
+par(mar=c(0,0,0,0))
+wordcloud(words=tokens_counts$stem,freq=tokens_counts$n,max.words=20)
+
+#tf-idf
+library(tidytext)
+tokens_counts2<-bind_tf_idf(tokens_counts,term=stem,document=ID,n=n)
+wordcloud(words=tokens_counts2$stem,freq=tokens_counts2$tf_idf,max.words=20)
+#Create the document-term matrix based on tf-idf
+dtm2<-cast_dtm(tokens_counts2,
+              document=ID,
+              term=stem,
+              value=n)
+dtm2
+```
+
+```{r}
+#Choose number of clusters
+k<-4
+
+library(tidyverse)
+#Set seed for replication
+set.seed(12345678)
+#Run k-means
+km.out<-kmeans(dtm2,centers=k)
+#check the convergence
+km.out$iter
+
+#Indicate how many documents per cluster
+table(km.out$cluster)
+
+colnames(km.out$centers)<-colnames(dtm2)
+
+for (i in 1:k){#loop for each cluster
+  print(str_c("Cluster",i))
+  #Create a tibble of the cluster words
+  print("Top 10 words:")
+  #Print 10 most important terms
+  cluster_centers<-enframe(km.out$centers[i, ])%>%
+    slice_max(value,n=10)
+  print(cluster_centers)
+  print("Constitutions classified:")
+  #Indicate to which clusters the constitutions are classified
+  cluster_docs<-enframe(km.out$cluster,"document","cluster")%>%
+    filter(cluster==i)
+  print(as.vector(cluster_docs$document))
+  cat("\n")
+  }
+```
+
+```{r}
+library(widyr)
+tokens_origin<-count(tokens_data2,ID,word)
+dtm_origin<-cast_dtm(tokens_origin,
+              document=ID,
+              term=word,
+              value=n)
+dtm_origin_matrix<-as.matrix(dtm_origin)
+
+cosine<-function(a,b){
+  numer<-apply(a*t(b),2,sum)
+denom<-sqrt(sum(a^2))*sqrt(apply(b^2,1,sum))
+return(numer/denom)
+}
+cos_matrix<-as.matrix(cosine(dtm_origin_matrix[149,],dtm_origin_matrix[-149,]))
+
+sort(cos_matrix)
+
+#ID: 7 (Argentina 1853), 109 (Philippines 1987), 80 (Liberia 1986), 53 (Ghana 1992), 124 (Solomon Islands 1978)
+```
+
+```{r}
+tokens_data2_1960<-subset(tokens_data2, year>=1960 & year<1970|ID==149)
+tokens_data2_1970<-subset(tokens_data2, year>=1970 & year<1980|ID==149)
+tokens_data2_1980<-subset(tokens_data2, year>=1980 & year<1990|ID==149)
+tokens_data2_1990<-subset(tokens_data2, year>=1990 & year<2000|ID==149)
+tokens_data2_2000<-subset(tokens_data2, year>=2000 & year<2010|ID==149)
+tokens_data2_2010<-subset(tokens_data2, year>=2010 & year<2020|ID==149)
+
+tokens_origin_1960<-count(tokens_data2_1960,ID,word)
+dtm_origin_1960<-cast_dtm(tokens_origin_1960,
+              document=ID,
+              term=word,
+              value=n)
+dtm_origin_matrix_1960<-as.matrix(dtm_origin_1960)
+cos_matrix_1960<-as.matrix(cosine(dtm_origin_matrix_1960[5,],dtm_origin_matrix_1960[-5,]))
+average_1960<-mean(cos_matrix_1960)
+sd_1960<-sd(cos_matrix_1960,na.rm=FALSE)
+
+tokens_origin_1970<-count(tokens_data2_1970,ID,word)
+dtm_origin_1970<-cast_dtm(tokens_origin_1970,
+              document=ID,
+              term=word,
+              value=n)
+dtm_origin_matrix_1970<-as.matrix(dtm_origin_1970)
+cos_matrix_1970<-as.matrix(cosine(dtm_origin_matrix_1970[25,],dtm_origin_matrix_1970[-25,]))
+average_1970<-mean(cos_matrix_1970)
+sd_1970<-sd(cos_matrix_1970,na.rm=FALSE)
+
+tokens_origin_1980<-count(tokens_data2_1980,ID,word)
+dtm_origin_1980<-cast_dtm(tokens_origin_1980,
+              document=ID,
+              term=word,
+              value=n)
+dtm_origin_matrix_1980<-as.matrix(dtm_origin_1980)
+cos_matrix_1980<-as.matrix(cosine(dtm_origin_matrix_1980[21,],dtm_origin_matrix_1980[-21,]))
+average_1980<-mean(cos_matrix_1980)
+sd_1980<-sd(cos_matrix_1980,na.rm=FALSE)
+
+tokens_origin_1990<-count(tokens_data2_1990,ID,word)
+dtm_origin_1990<-cast_dtm(tokens_origin_1990,
+              document=ID,
+              term=word,
+              value=n)
+dtm_origin_matrix_1990<-as.matrix(dtm_origin_1990)
+cos_matrix_1990<-as.matrix(cosine(dtm_origin_matrix_1990[47,],dtm_origin_matrix_1990[-47,]))
+average_1990<-mean(cos_matrix_1990)
+sd_1990<-sd(cos_matrix_1990,na.rm=FALSE)
+
+tokens_origin_2000<-count(tokens_data2_2000,ID,word)
+dtm_origin_2000<-cast_dtm(tokens_origin_2000,
+              document=ID,
+              term=word,
+              value=n)
+dtm_origin_matrix_2000<-as.matrix(dtm_origin_2000)
+cos_matrix_2000<-as.matrix(cosine(dtm_origin_matrix_2000[23,],dtm_origin_matrix_2000[-23,]))
+average_2000<-mean(cos_matrix_2000)
+sd_2000<-sd(cos_matrix_2000,na.rm=FALSE)
+
+tokens_origin_2010<-count(tokens_data2_2010,ID,word)
+dtm_origin_2010<-cast_dtm(tokens_origin_2010,
+              document=ID,
+              term=word,
+              value=n)
+dtm_origin_matrix_2010<-as.matrix(dtm_origin_2010)
+cos_matrix_2010<-as.matrix(cosine(dtm_origin_matrix_2010[18,],dtm_origin_matrix_2010[-18,]))
+average_2010<-mean(cos_matrix_2010)
+sd_2010<-sd(cos_matrix_2010,na.rm=FALSE)
+
+library(ggplot2)
+cos_frame_1960<-as.data.frame(cos_matrix_1960)
+cos_frame_1960$year<-as.character(1960)
+cos_frame_1970<-as.data.frame(cos_matrix_1970)
+cos_frame_1970$year<-as.character(1970)
+cos_frame_1980<-as.data.frame(cos_matrix_1980)
+cos_frame_1980$year<-as.character(1980)
+cos_frame_1990<-as.data.frame(cos_matrix_1990)
+cos_frame_1990$year<-as.character(1990)
+cos_frame_2000<-as.data.frame(cos_matrix_2000)
+cos_frame_2000$year<-as.character(2000)
+cos_frame_2010<-as.data.frame(cos_matrix_2010)
+cos_frame_2010$year<-as.character(2010)
+
+
+g2<-ggplot()+stat_summary(aes(x=year,y=V1),cos_frame_1960,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_1970,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_1980,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_1990,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_2000,fun.data="mean_cl_normal")+stat_summary(aes(x=year,y=V1),cos_frame_2010,fun.data="mean_cl_normal")
+g2
+```
+
